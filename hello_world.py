@@ -50,6 +50,7 @@ def round(number_rounds, wolf, sheep, wolf_move_dist):
     #sprawdzenie czy wilk może pożreć najbliższą owcę:
     if min(distances_wolf_sheep) < wolf_move_dist:
         print("wilk zjada owcę!")
+        del sheep[nearest_sheep_index]
     else:
         print("owca nadal zyje")
 
