@@ -1,3 +1,3 @@
-array = ["ziemniak", "kartofel", "surowka", "jablko", "ananas"]
+array = ["ziemniak", null, "surowka", "jablko", "ananas"]
 del array[2]
 print(array)
