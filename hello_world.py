@@ -3,6 +3,9 @@ import random
 import math
 import json
 import csv
+import argparse
+
+
 
 class Sheep:
     def __init__(self):
@@ -10,7 +13,7 @@ class Sheep:
         self.init_pos_limit=random.uniform(0, 1)*10
         self.x = -(self.init_pos_limit)
         self.y = self.init_pos_limit
-        self.alive = True
+        self.status = "alive"
     def move_sheep(self, sheep_move_dist):
         directions = ["north", "west", "east", "south"]
         random.shuffle(directions)
@@ -27,6 +30,16 @@ class Sheep:
         else:
             #print("to jest poludnie")
             self.y -= sheep_move_dist
+
+    def eat(self):
+        self.status = 'eaten';
+
+    def sheep_info(self):
+        if(self.status == "alive"):
+            return str(self.x) + ', ' + str(self.y)
+        else:
+            return 'null'
+
     def get_sheep_coordinates(self):
         print(self.x)
         print(self.y)
@@ -36,65 +49,99 @@ class Wolf:
         self.x=0.0
         self.y=0.0
     def move_wolf(self, wolf_move_dist, nearest_sheep_index, nearest_sheep_distance, sheep):
-        self.x += wolf_move_dist * ((sheep[nearest_sheep_index].x - self.x) / nearest_sheep_distance)    
-        self.y += wolf_move_dist * ((sheep[nearest_sheep_index].y - self.y) / nearest_sheep_distance)  
+        self.x += wolf_move_dist * ((sheep[nearest_sheep_index].x - self.x) / nearest_sheep_distance)
+        self.y += wolf_move_dist * ((sheep[nearest_sheep_index].y - self.y) / nearest_sheep_distance)
         # print(sheep[nearest_sheep_index].x)
-        # print(sheep[nearest_sheep_index].y)  
+        # print(sheep[nearest_sheep_index].y)
     def get_wolf_coordinates(self):
         #"{:.3f}" sluzy do wyswietlenia wspolrzednych wilka z trzema miejscami po przecinku
         print("{:.3f}".format(self.x))
         print("{:.3f}".format(self.y))
 
 
-def round(number_rounds, wolf, sheep, wolf_move_dist):
+def round(number_rounds, wolf, sheep, wolf_move_dist, j):
     #liczenie dystansu miedzy wilkiem i owcami
     distances_wolf_sheep = []
+
     for single_sheep in sheep:
         distances_wolf_sheep.append(math.sqrt(((single_sheep.x - wolf.x) ** 2) + ((single_sheep.y - wolf.y) ** 2)))
+        #jeżeli owca jest martwa to oddalamy ją daleko żeby nie była brana pod uwagę i zjedzona ponownie
+        if single_sheep.status != "alive":
+            distances_wolf_sheep[-1] += 10000
     #wybor najblizszej owcy, znalezienie jej indeksu
     nearest_sheep_distance = min(distances_wolf_sheep)
     nearest_sheep_index = distances_wolf_sheep.index(min(distances_wolf_sheep))
     #sprawdzenie czy wilk moze pozreć najblizszą owcę
     if min(distances_wolf_sheep) < wolf_move_dist:
         print("wilk zjada owcę!")
-        sheep[nearest_sheep_index].alive == False
-        del sheep[nearest_sheep_index]
+        #  del sheep[nearest_sheep_index]
+        sheep[nearest_sheep_index].eat()
         print("byla to owca o indeksie: ")
         print(nearest_sheep_index)
     else:
         wolf.move_wolf(wolf_move_dist, nearest_sheep_index, nearest_sheep_distance, sheep)
+    toJSON(j, wolf, sheep)
 
-def toJSON(j,wolf,sheep):
-    cord = str("{:.3f}".format(wolf.x))+", "+str("{:.3f}".format(wolf.y))
-    data = {"round_no": j, "wolf_pos": cord}
 
-    positions=[]
+
+def toJSON(j, wolf, sheep):
+    data = {"round_no": j, "wolf_pos": str("{:.3f}".format(wolf.x))+", "+str("{:.3f}".format(wolf.y))}
+    positions = []
     for s in sheep:
-        if s.alive:
-            positions.append(str(s.x)+", "+str(s.y))
-        else:
-            positions.append("None")
+        #if sheep_position != "Null":
+        # positions.append(str(s.x)+", "+str(s.y))
+        positions.append(s.sheep_info())
+    #  if sheep_position == "Null":
+    #     positions.append("None/null")
     data['sheep_pos'] = positions
     file = open("pos.json", "a+")
     file.write(json.dumps(data, indent=4))
     file.close()
 
-
-
+def count_alive(sheep):
+    count = 0
+    for s in sheep:
+        if s.status == 'alive':
+            count += 1
+    return count
 
 def toCSV(j, sheep):
     with open('alive.csv', 'a+') as csvfile:
         csvwriter = csv.writer(csvfile)
-        csvwriter.writerow([j, len(sheep)])
+        # csvwriter.writerow([j, len(sheep)])
+        csvwriter.writerow([j, count_alive(sheep)])
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('-c', '--config', metavar='FILE',
+                        help='config file')
+  #  parser.add_argument('-h', '--help')
+    parser.add_argument('-l', '--log', metavar='LEVEL',
+                        help='save to the journal')
+    parser.add_argument('-r', '--rounds', type=int,
+                        help='number of rounds to simulate')
+    parser.add_argument('-s', '--sheep', type=int,
+                        help='number of sheeps')
+    parser.add_argument('-w', '--wait', help='Wait for user input')
+
+    args = parser.parse_args()
+    return args
 
 def main():
+
+    args = parse_args()
+
     sheep_move_dist = 0.5
     number_sheep = 15
     wolf_move_dist = 1
     number_rounds = 50
+    if args.rounds > 0:
+        number_rounds = args.rounds #przykładowe sprawdzanie
+        
 
+    init_pos_limit = 10.0
     wolf = Wolf()
-
     #dodawanie owiec do tablicy sheep
     sheep = []
     i=0
@@ -116,16 +163,15 @@ def main():
     open("pos.json", "w").close()
 
     while j < number_rounds:
-        round(number_rounds, wolf, sheep, wolf_move_dist)
+        round(number_rounds, wolf, sheep, wolf_move_dist,j)
         toCSV(j, sheep)
-        toJSON(j, wolf, sheep)
         print("numer tury: ")
         print(j)
         print("wspolrzedne wilka: ")
         wolf.get_wolf_coordinates()
         print("ilosc owiec, ktore zyja:")
-        print(len(sheep))
-        if(len(sheep)) == 0:
+        print(count_alive(sheep))
+        if(count_alive(sheep)) == 0:
             break
         j += 1
 
