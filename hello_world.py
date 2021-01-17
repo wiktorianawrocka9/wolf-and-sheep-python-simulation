@@ -5,13 +5,13 @@ import math
 import json
 import csv
 import argparse
-
+from configparser import ConfigParser
 
 
 class Sheep:
-    def __init__(self):
+    def __init__(self, init_pos_limit):
         #wspolrzednie owcy w obszarze (-10,10)
-        self.init_pos_limit=random.uniform(0, 1)*10
+        self.init_pos_limit=random.uniform(0, 1)*init_pos_limit
         self.x = -(self.init_pos_limit)
         self.y = self.init_pos_limit
         self.status = "alive"
@@ -137,6 +137,25 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
+def config_parser(file_name):
+    file_name = 'config.ini'
+    config = ConfigParser()
+    config.read(file_name)
+
+    init_pos_limit = config['Terrain']['InitPosLimit']
+    sheep_move_dist = config['Movement']['SheepMoveDist']
+    wolf_move_dist = config['Movement']['WolfMoveDist']
+
+    if float(init_pos_limit) < 0:
+        raise ValueError("init_pos_limi is not positive value")
+    if float(sheep_move_dist) < 0:
+        raise ValueError("sheep_move_dist is not positive value")
+    if float(wolf_move_dist) < 0:
+        raise ValueError("wolf_move_dist is not positive value")
+
+    return float(init_pos_limit), float(sheep_move_dist), float(wolf_move_dist)
+
 def main():
 
     args = parse_args()
@@ -158,6 +177,8 @@ def main():
        wait = args.wait
     if args.directory:
        directory = args.directory
+    if args.config:
+       init_pos_limit, sheep_move_dist, wolf_move_dist = config_parser(args.config)
 
 
     wolf = Wolf()
@@ -165,7 +186,7 @@ def main():
     sheep = []
     i = 0
     while i < number_sheep:
-        sheep.append(Sheep())
+        sheep.append(Sheep(init_pos_limit))
         i += 1
 
     #rozgrywka
