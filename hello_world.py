@@ -31,7 +31,7 @@ class Sheep:
             #print("to jest poludnie")
             self.y -= sheep_move_dist
 
-    def eat(self):
+    def getEaten(self):
         self.status = 'eaten';
 
     def sheep_info(self):
@@ -75,7 +75,7 @@ def round(number_rounds, wolf, sheep, wolf_move_dist, j):
     if min(distances_wolf_sheep) < wolf_move_dist:
         print("wilk zjada owcę!")
         #  del sheep[nearest_sheep_index]
-        sheep[nearest_sheep_index].eat()
+        sheep[nearest_sheep_index].getEaten()
         print("byla to owca o indeksie: ")
         print(nearest_sheep_index)
     else:
@@ -116,6 +116,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('-c', '--config', metavar='FILE',
                         help='config file')
+    parser.add_argument('-d', '--dir', metavar='DIR',
+                        help='directory name')
   #  parser.add_argument('-h', '--help')
     parser.add_argument('-l', '--log', metavar='LEVEL',
                         help='save to the journal')
@@ -123,7 +125,7 @@ def parse_args():
                         help='number of rounds to simulate')
     parser.add_argument('-s', '--sheep', type=int,
                         help='number of sheeps')
-    parser.add_argument('-w', '--wait', help='Wait for user input')
+    parser.add_argument('-w', '--wait', action='store_true', help='Wait for user input')
 
     args = parser.parse_args()
     return args
@@ -136,11 +138,19 @@ def main():
     number_sheep = 15
     wolf_move_dist = 1
     number_rounds = 50
-    if args.rounds > 0:
-        number_rounds = args.rounds #przykładowe sprawdzanie
-        
-
     init_pos_limit = 10.0
+
+    wait = False
+    if args.rounds > 0:
+        number_rounds = args.rounds
+    if args.sheep:
+        number_sheep = args.sheep
+    if args.wait:
+       wait = args.wait
+   # if args.help:
+
+
+
     wolf = Wolf()
     #dodawanie owiec do tablicy sheep
     sheep = []
@@ -163,7 +173,7 @@ def main():
     open("pos.json", "w").close()
 
     while j < number_rounds:
-        round(number_rounds, wolf, sheep, wolf_move_dist,j)
+        round(number_rounds, wolf, sheep, wolf_move_dist, j)
         toCSV(j, sheep)
         print("numer tury: ")
         print(j)
@@ -173,6 +183,8 @@ def main():
         print(count_alive(sheep))
         if(count_alive(sheep)) == 0:
             break
+        if wait:
+            input("Press key to continue simulation")
         j += 1
 
 
