@@ -119,24 +119,36 @@ def round(number_rounds, wolf, sheep, wolf_move_dist, j, sheep_move_dist, direct
 
 
 def toJSON(j, wolf, sheep, directory):
+    #dane do naszego pliku json
     data = {
         "round_no": j,
         "wolf_pos": str("{:.3f}".format(wolf.x))+", "+str("{:.3f}".format(wolf.y))}
     positions = []
+    #do listy dodajemy sheep_info każdej owcy
+    #czyli pozycje dla zywych i null dla zjedzonych
     for s in sheep:
         positions.append(s.sheep_info())
     data['sheep_pos'] = positions
     if j == 1:
+        #jezeli podane zostanie -d nazwakatalogu
         if directory:
+            #os.getcwd() zwraca biezacy katalog roboczy
             current_dir = os.getcwd()
+            #path to katalog w którym maja byc pliki
             path = current_dir + directory
+            #metoda pobiera nazwe katalogu z path
             directory_path = os.path.dirname(path)
+            #jak nie ma takiego katalogu to go tworzymy
             if not os.path.exists(directory_path):
                 os.mkdir(directory)
+            #zmieniamy katalog na ten w ktorym maja sie znalezc pliki
             os.chdir(directory)
+        #dla pierwszej rundy zapisz do pliku
         file = open("pos.json", "w")
     else:
+        #każda kolejna runda dopisz do pliku
         file = open("pos.json", "a")
+    #zapis danych w formacie json do pliku, indent to liczba spacji odlewej w pliku json
     file.write(json.dumps(data, indent=4))
     file.close()
     log = "round toJSON called"
