@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+import os
 import random
 import math
 import json
@@ -59,10 +60,9 @@ class Wolf:
         print("{:.3f}".format(self.y))
 
 
-def round(number_rounds, wolf, sheep, wolf_move_dist, j):
+def round(number_rounds, wolf, sheep, wolf_move_dist, j, directory):
     #liczenie dystansu miedzy wilkiem i owcami
     distances_wolf_sheep = []
-
     for single_sheep in sheep:
         distances_wolf_sheep.append(math.sqrt(((single_sheep.x - wolf.x) ** 2) + ((single_sheep.y - wolf.y) ** 2)))
         #jeżeli owca jest martwa to oddalamy ją daleko żeby nie była brana pod uwagę i zjedzona ponownie
@@ -80,21 +80,29 @@ def round(number_rounds, wolf, sheep, wolf_move_dist, j):
         print(nearest_sheep_index)
     else:
         wolf.move_wolf(wolf_move_dist, nearest_sheep_index, nearest_sheep_distance, sheep)
-    toJSON(j, wolf, sheep)
+    toJSON(j, wolf, sheep, directory)
 
 
-
-def toJSON(j, wolf, sheep):
-    data = {"round_no": j, "wolf_pos": str("{:.3f}".format(wolf.x))+", "+str("{:.3f}".format(wolf.y))}
+def toJSON(j, wolf, sheep, directory):
+    data = {
+        "round_no": j,
+        "wolf_pos": str("{:.3f}".format(wolf.x))+", "+str("{:.3f}".format(wolf.y))
+    }
     positions = []
     for s in sheep:
-        #if sheep_position != "Null":
-        # positions.append(str(s.x)+", "+str(s.y))
         positions.append(s.sheep_info())
-    #  if sheep_position == "Null":
-    #     positions.append("None/null")
     data['sheep_pos'] = positions
-    file = open("pos.json", "a+")
+    if j == 1:
+        if directory:
+            current_dir = os.getcwd()
+            path = current_dir + directory
+            directory_path = os.path.dirname(path)
+            if not os.path.exists(directory_path):
+                os.mkdir(directory)
+            os.chdir(directory)
+        file = open("pos.json", "w")
+    else:
+        file = open("pos.json", "a")
     file.write(json.dumps(data, indent=4))
     file.close()
 
@@ -114,11 +122,10 @@ def toCSV(j, sheep):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('-c', '--config', metavar='FILE',
+    parser.add_argument('-c', '--config', metavar='FILE ',
                         help='config file')
-    parser.add_argument('-d', '--dir', metavar='DIR',
+    parser.add_argument('-d', '--dir', metavar='DIR', dest='directory',
                         help='directory name')
-  #  parser.add_argument('-h', '--help')
     parser.add_argument('-l', '--log', metavar='LEVEL',
                         help='save to the journal')
     parser.add_argument('-r', '--rounds', type=int,
@@ -139,22 +146,24 @@ def main():
     wolf_move_dist = 1
     number_rounds = 50
     init_pos_limit = 10.0
-
     wait = False
-    if args.rounds > 0:
+    directory = None
+
+
+    if args.rounds:
         number_rounds = args.rounds
     if args.sheep:
         number_sheep = args.sheep
     if args.wait:
        wait = args.wait
-   # if args.help:
-
+    if args.directory:
+       directory = args.directory
 
 
     wolf = Wolf()
     #dodawanie owiec do tablicy sheep
     sheep = []
-    i=0
+    i = 0
     while i < number_sheep:
         sheep.append(Sheep())
         i += 1
@@ -173,7 +182,7 @@ def main():
     open("pos.json", "w").close()
 
     while j < number_rounds:
-        round(number_rounds, wolf, sheep, wolf_move_dist, j)
+        round(number_rounds, wolf, sheep, wolf_move_dist, j, directory)
         toCSV(j, sheep)
         print("numer tury: ")
         print(j)
